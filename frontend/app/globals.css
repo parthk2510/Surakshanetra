@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+/* ── Dark theme (default) ─────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --background:         #0a0f1a;
+  --foreground:         #f1f5f9;
+  --surface:            #111827;
+  --surface-2:          #1f2937;
+  --surface-3:          #374151;
+  --border:             #1e293b;
+  --border-2:           #374151;
+  --text-primary:       #f1f5f9;
+  --text-secondary:     #94a3b8;
+  --text-muted:         #475569;
+  --accent:             #3b82f6;
+  --accent-hover:       #2563eb;
+  --sidebar-bg:         #0f1628;
+  --header-bg:          #0d1424;
+  --graph-bg:           #030712;
+  --panel-bg:           #111827;
+  --input-bg:           #1f2937;
+  --scrollbar-thumb:    rgba(59,130,246,0.5);
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --background:         #f8fafc;
+  --foreground:         #0f172a;
+  --surface:            #ffffff;
+  --surface-2:          #f1f5f9;
+  --surface-3:          #e2e8f0;
+  --border:             #e2e8f0;
+  --border-2:           #cbd5e1;
+  --text-primary:       #0f172a;
+  --text-secondary:     #334155;
+  --text-muted:         #64748b;
+  --accent:             #2563eb;
+  --accent-hover:       #1d4ed8;
+  --sidebar-bg:         #f1f5f9;
+  --header-bg:          #f1f5f9;
+  --graph-bg:           #ffffff;
+  --panel-bg:           #ffffff;
+  --input-bg:           #f8fafc;
+  --scrollbar-thumb:    rgba(37,99,235,0.35);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Theme-aware utilities ────────────────────────────────────────────────── */
+.bg-theme-surface  { background: var(--surface); }
+.bg-theme-surface2 { background: var(--surface-2); }
+.bg-theme-sidebar  { background: var(--sidebar-bg); }
+.bg-theme-header   { background: var(--header-bg); }
+.bg-theme-input    { background: var(--input-bg); }
+.border-theme      { border-color: var(--border); }
+.border-theme-2    { border-color: var(--border-2); }
+.text-theme-primary   { color: var(--text-primary); }
+.text-theme-secondary { color: var(--text-secondary); }
+.text-theme-muted     { color: var(--text-muted); }
+
+/* ── Light mode enhancements: elevate surfaces with shadow ──────────────── */
+[data-theme="light"] .card,
+[data-theme="light"] [class*="bg-white"],
+[data-theme="light"] .bg-theme-surface {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ── Sidebar separator line more visible in light mode ──────────────────── */
+[data-theme="light"] aside {
+  box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+}
+
+/* ── Z-index layer system (mirrors styles/z-layers.ts) ──────────────────── */
+:root {
+  --z-graph-canvas:      0;
+  --z-graph-controls:   10;
+  --z-graph-legend:     12;
+  --z-sidebar:          20;
+  --z-header:           30;
+  --z-modal-backdrop:   40;
+  --z-modal:            45;
+  --z-node-detail:      45;
+  --z-decision-panel:   46;
+  --z-settings-panel:   47;
+  --z-tooltip:          50;
+  --z-toast:           100;
+}
+
+/* ── Responsive layout helpers ───────────────────────────────────────────── */
+/* Sidebar: full-width drawer on mobile, fixed column on desktop */
+.app-sidebar {
+  width: 320px;
+  min-width: 320px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease, width 0.25s ease;
+}
+
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: var(--z-sidebar);
+    transform: translateX(-100%);
+  }
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+  }
+  .app-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: calc(var(--z-sidebar) - 1);
+    display: none;
+  }
+  .app-sidebar-overlay.sidebar-open {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    position: relative;
+    transform: none !important;
+  }
+  .app-sidebar-overlay { display: none !important; }
+  .sidebar-toggle-btn  { display: none !important; }
+}
+
+/* ── Graph overlay panels: prevent viewport overflow ─────────────────────── */
+.graph-overlay-panel {
+  position: absolute;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Stack panels vertically on narrow graph containers */
+@media (max-width: 1280px) {
+  .graph-overlay-panel.decision-panel-overlay {
+    left: 16px !important;
+    top: auto !important;
+    bottom: 16px;
+    max-height: 40vh;
+  }
+}
+
+/* ── Range-slider thumb (cross-browser) ─────────────────────────────────── */
+input[type="range"].cb-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"].cb-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--accent);
+  cursor: pointer;
+}
+input[type="range"].cb-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+}
+
+/* ── Responsive header helpers ───────────────────────────────────────────── */
+/* Elements hidden on small phones (< 480px) */
+@media (max-width: 479px) {
+  .header-mode-label   { display: none !important; }
+  .header-username     { display: none !important; }
+  .header-role-badge   { display: none !important; }
+  .header-backend      { display: none !important; }
+  .header-home-btn     { display: none !important; }
+}
+
+/* Elements hidden on tablets (480–767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .header-username     { display: none !important; }
+  .header-backend      { display: none !important; }
+}
+
+/* Short label visible only on small screens, full label on larger */
+.header-mode-short { display: none; }
+@media (max-width: 767px) {
+  .header-mode-short { display: inline; }
+  .header-mode-full  { display: none; }
+}
+@media (min-width: 768px) {
+  .header-mode-short { display: none; }
+  .header-mode-full  { display: inline; }
+}

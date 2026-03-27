@@ -1,0 +1,31 @@
+# Railway deployment config — ChainBreak Backend
+# Docs: https://docs.railway.com/reference/config-as-code
+#
+# Setup in the Railway UI:
+#   Service → Settings → Source
+#     Root Directory : (leave blank — repo root)
+#     Dockerfile Path: backend/Dockerfile.railway
+#
+# Environment variables to set in Railway Variables:
+#   CHAINBREAK_SECRET_KEY  = <64-char hex>
+#   NEO4J_URI              = bolt://<host>:7687  (if using Neo4j add-on)
+#   NEO4J_USER             = neo4j
+#   NEO4J_PASSWORD         = <password>
+#   ADMIN_USERNAME         = admin
+#   ADMIN_PASSWORD         = <strong-password>
+#   SECURE_COOKIES         = true
+#   WEB_CONCURRENCY        = 2
+#   LOG_LEVEL              = info
+
+[build]
+builder        = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile.railway"
+
+[deploy]
+# Railway injects $PORT automatically — gunicorn reads it at runtime.
+# startCommand overrides CMD only if you need to pass extra flags here.
+startCommand        = "gunicorn backend.api_root:app --worker-class uvicorn.workers.UvicornWorker --workers ${WEB_CONCURRENCY:-2} --bind 0.0.0.0:${PORT:-8000} --timeout 120 --keep-alive 5 --log-level ${LOG_LEVEL:-info} --access-logfile - --error-logfile -"
+healthcheckPath         = "/api/health"
+healthcheckTimeout      = 300
+restartPolicyType       = "ON_FAILURE"
+restartPolicyMaxRetries = 10

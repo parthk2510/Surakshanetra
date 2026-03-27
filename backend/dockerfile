@@ -1,0 +1,74 @@
+# docker-compose / self-hosted Dockerfile.
+# Build context = repo root (docker-compose.yaml sets context: .)
+# For Railway deployment use backend/dockerfile.railway instead.
+
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc g++ libpq-dev build-essential \
+        libffi-dev libssl-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+
+COPY requirements.txt .
+# Pre-install numpy and scikit-learn at the exact versions used to train the
+# RGCN model so the correct ABI is in place before the rest of the packages.
+RUN pip install --upgrade pip wheel "setuptools>=68" && \
+    pip install --no-cache-dir "numpy==2.4.3" && \
+    pip install --no-cache-dir "scikit-learn==1.8.0" && \
+    pip install --no-cache-dir "torch==2.6.0" \
+        --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir "torch-geometric==2.7.0" && \
+    grep -vE '^torch' requirements.txt > /tmp/req_no_torch.txt && \
+    pip install --no-cache-dir -r /tmp/req_no_torch.txt
+
+FROM python:3.12-slim AS runtime
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -r -u 1001 -g 0 -s /sbin/nologin appuser
+WORKDIR /src
+
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY backend/ ./backend/
+COPY app.py .
+COPY crypto_threat_intel_package/ ./crypto_threat_intel_package/
+COPY config.yaml .
+
+RUN mkdir -p instance backend/logs data/cases data/graph data/upi_communities \
+        data/upi_comparisons data/upi-cases data/temporal_reports logs && \
+    chown -R appuser:0 /src && \
+    chmod -R g=u /src
+
+USER appuser
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV LOG_LEVEL=info
+ENV CHAINBREAK_DB_PATH=/src/instance/chainbreak.db
+ENV PYTHONPATH=/src
+ENV WEB_CONCURRENCY=2
+# PORT is set to 8000 by default; GCP Cloud Run overrides this at runtime.
+ENV PORT=8000
+
+EXPOSE 8000
+
+# Health check — used by Docker Compose, GCP Cloud Run startup probes, and k8s.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fs http://localhost:${PORT:-8000}/api/health || exit 1
+
+CMD ["sh", "-c", "exec gunicorn backend.api_root:app \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers ${WEB_CONCURRENCY} \
+    --bind 0.0.0.0:${PORT:-8000} \
+    --timeout 600 \
+    --keep-alive 5 \
+    --log-level ${LOG_LEVEL} \
+    --access-logfile - \
+    --error-logfile -"]

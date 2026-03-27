@@ -1,0 +1,111 @@
+################################################################################
+# GENERAL & OS
+################################################################################
+.DS_Store
+Thumbs.db
+*~
+*.tmp
+*.log
+temp/
+tmp/
+
+################################################################################
+# PYTHON
+################################################################################
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+
+# Python Build & Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+################################################################################
+# NODE / REACT
+################################################################################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# React/JS Build Output
+# (Note: dist/ and build/ are shared with Python section above)
+coverage/
+
+################################################################################
+# ENVIRONMENT & SECRETS (DO NOT COMMIT)
+################################################################################
+.env
+.env.*
+config/local.json
+config/secrets.json
+secrets/
+keys/
+*.pem
+*.key
+
+################################################################################
+# IDEs & EDITORS
+################################################################################
+.vscode/
+.idea/
+*.iml
+.cursorignore
+
+################################################################################
+# DATABASES & DATA
+################################################################################
+*.sqlite
+*.sqlite3
+*.db
+uploads/
+data/
+cache/
+
+# Blockchain / Node Data
+chain_data/
+node_data/
+node_dat
+indexes/
+snapshots/
+
+################################################################################
+# COMPILED & BUILD ARTIFACTS
+################################################################################
+*.class
+*.jar
+target/
+out/
+test-output/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+################################################################################
+# REPORTS & EXPORTS
+################################################################################
+reports/
+exports/
+
+# Warning: Use with caution. These are often needed in a repo.
+*.txt
+*.md

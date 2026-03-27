@@ -1,0 +1,52 @@
+# ---------- Dependencies ----------
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --prefer-offline
+
+# ---------- Build ----------
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ .
+
+ARG BACKEND_URL=http://backend:8000
+ENV BACKEND_URL=$BACKEND_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+# Activates output:'standalone' in next.config.ts for Docker images.
+ENV NEXT_BUILD_STANDALONE=true
+
+RUN npm run build
+
+# ---------- Runtime ----------
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+# PORT is 3000 by default; GCP Cloud Run overrides this at runtime.
+ENV PORT=3000
+
+# ✅ Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# ✅ Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# ✅ Copy standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fs http://localhost:${PORT:-3000} || exit 1
+
+# GCP Cloud Run sets PORT at runtime; server.js reads process.env.PORT.
+CMD ["node", "server.js"]

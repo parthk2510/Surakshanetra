@@ -1,0 +1,114 @@
+# ============================================================
+# Railway Dockerfile — ChainBreak Backend
+# ============================================================
+# Build context : repo root  (Railway "Root Directory" = "/"  i.e. leave blank)
+# Dockerfile path: backend/Dockerfile.railway
+#
+# Image layout inside the container:
+#   /src/
+#     app.py
+#     config.yaml
+#     requirements.txt
+#     backend/          ← all Python backend code
+#     crypto_threat_intel_package/
+#     instance/         ← SQLite DB (Runtime volume if persisted)
+#     data/             ← saved cases / graphs
+#
+# PYTHONPATH=/src  →  "import backend.api_root" works correctly.
+# ============================================================
+
+# ─────────────────────────── Builder ───────────────────────────
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc g++ libpq-dev build-essential \
+        libffi-dev libssl-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy requirements first so Docker can cache this expensive layer
+COPY requirements.txt .
+
+# Install in order to respect ABI compatibility:
+#  1. pip / setuptools
+#  2. numpy (many packages hard-link against it)
+#  3. scikit-learn (used by the RGCN joblib pipeline)
+#  4. torch CPU wheel  (explicit index-url avoids pulling the default CUDA build)
+#  5. torch-geometric
+#  6. everything else (with torch lines stripped to avoid conflicts)
+RUN pip install --upgrade pip wheel "setuptools>=68" && \
+    pip install --no-cache-dir "numpy==2.4.3" && \
+    pip install --no-cache-dir "scikit-learn==1.8.0" && \
+    pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        "torch==2.6.0" && \
+    pip install --no-cache-dir "torch-geometric==2.7.0" && \
+    grep -vE '^(torch|--extra-index-url)' requirements.txt > /tmp/req_no_torch.txt && \
+    pip install --no-cache-dir -r /tmp/req_no_torch.txt
+
+# ─────────────────────────── Runtime ───────────────────────────
+FROM python:3.12-slim AS runtime
+
+# Minimal runtime system tools (curl for health checks)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Non-root user — matches Railway's expectation of running as non-root
+RUN useradd -r -u 1001 -g 0 -s /sbin/nologin appuser
+
+WORKDIR /src
+
+# Pull compiled packages from builder stage
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# ── Source files (build context is repo root) ──
+COPY app.py          ./app.py
+COPY config.yaml     ./config.yaml
+COPY requirements.txt ./requirements.txt
+COPY backend/        ./backend/
+COPY crypto_threat_intel_package/ ./crypto_threat_intel_package/
+
+# ── Writable directories (Railway ephemeral FS — use volumes for persistence) ──
+RUN mkdir -p \
+        instance \
+        backend/logs \
+        data/cases \
+        data/graph \
+        data/upi_communities \
+        data/upi_comparisons \
+        data/upi-cases \
+        data/temporal_reports \
+        logs && \
+    chown -R appuser:0 /src && \
+    chmod -R g=u /src
+
+USER appuser
+
+# ─────────────────────────── Environment ───────────────────────────
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/src
+ENV LOG_LEVEL=info
+# Railway injects $PORT automatically (usually 8080).
+# Gunicorn reads it via ${PORT:-8000} — no hardcoding needed.
+ENV PORT=8000
+ENV WEB_CONCURRENCY=2
+ENV CHAINBREAK_DB_PATH=/src/instance/chainbreak.db
+
+EXPOSE ${PORT}
+
+# ─────────────────────────── Start ───────────────────────────
+# Railway sets $PORT at runtime; gunicorn binds to it.
+CMD ["sh", "-c", "exec gunicorn backend.api_root:app \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers ${WEB_CONCURRENCY:-2} \
+    --bind 0.0.0.0:${PORT:-8000} \
+    --timeout 120 \
+    --keep-alive 5 \
+    --log-level ${LOG_LEVEL:-info} \
+    --access-logfile - \
+    --error-logfile -"]

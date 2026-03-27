@@ -1,0 +1,19 @@
+FROM nginx:1.27-alpine
+
+RUN apk add --no-cache openssl certbot python3 py3-pip && \
+    pip3 install --no-cache-dir certbot-nginx --break-system-packages 2>/dev/null || \
+    pip3 install --no-cache-dir certbot-nginx
+
+RUN mkdir -p /var/www/certbot /etc/nginx/certs /etc/nginx/certs-default /var/cache/nginx
+
+RUN openssl dhparam -out /etc/nginx/certs-default/dhparam.pem 2048
+
+COPY nginx/default.conf  /etc/nginx/conf.d/default.conf
+COPY nginx/ssl.conf       /etc/nginx/conf.d/ssl.conf
+COPY nginx/nginx.conf     /etc/nginx/nginx.conf
+COPY nginx/generate-ssl.sh /docker-entrypoint.d/10-generate-ssl.sh
+RUN chmod +x /docker-entrypoint.d/10-generate-ssl.sh
+
+RUN chown -R nginx:nginx /var/cache/nginx /var/www/certbot
+
+EXPOSE 80 443

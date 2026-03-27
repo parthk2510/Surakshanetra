@@ -1,0 +1,196 @@
+networks:
+  chainbreak_net:
+    driver: bridge
+
+services:
+  neo4j:
+    image: neo4j:5.18-community
+    networks:
+      - chainbreak_net
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-ChainBreak_Neo4j_2026!}
+      NEO4J_dbms_memory_heap_initial__size: 2G
+      NEO4J_dbms_memory_heap_max__size: 4G
+      NEO4J_dbms_memory_pagecache_size: 2G
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*,apoc.*"
+      NEO4J_dbms_jvm_additional: "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication"
+      NEO4J_dbms_connector_bolt_thread__pool__min__size: "10"
+      NEO4J_dbms_connector_bolt_thread__pool__max__size: "400"
+      NEO4J_dbms_transaction_timeout: "120s"
+      NEO4J_db_transaction_timeout: "120s"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/import
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null -q http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "6.0"
+          memory: 7G
+        reservations:
+          cpus: "2.0"
+          memory: 3G
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/dockerfile
+    networks:
+      - chainbreak_net
+    env_file:
+      - .env
+    environment:
+      CHAINBREAK_DB_PATH: /src/instance/chainbreak.db
+      LOG_LEVEL: info
+      ALLOWED_ORIGINS: "https://${DOMAIN:-localhost},http://localhost:3000"
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-ChainBreak_Neo4j_2026!}
+      WEB_CONCURRENCY: "6"
+      UVICORN_WORKERS: "6"
+    volumes:
+      - chainbreak_db:/src/instance
+      - chainbreak_logs:/src/backend/logs
+      - chainbreak_data:/src/data
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "8.0"
+          memory: 4G
+        reservations:
+          cpus: "2.0"
+          memory: 1G
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/dockerfile
+      args:
+        BACKEND_URL: "http://backend:8000"
+    networks:
+      - chainbreak_net
+    environment:
+      BACKEND_URL: "http://backend:8000"
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/dockerfile
+    networks:
+      - chainbreak_net
+    ports:
+      - "${SERVER_IP:-0.0.0.0}:80:80"
+      - "${SERVER_IP:-0.0.0.0}:443:443"
+    volumes:
+      - nginx_certs:/etc/nginx/certs
+    environment:
+      SERVER_IP: "${SERVER_IP:-}"
+      DOMAIN: "${DOMAIN:-}"
+      CERTBOT_EMAIL: "${CERTBOT_EMAIL:-}"
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null -q http://localhost/api/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    # TryCloudflare — no account or token needed.
+    # Points directly to the Next.js frontend (Cloudflare handles TLS at the edge,
+    # so we skip nginx to avoid the HTTP→HTTPS redirect loop).
+    # Next.js rewrites proxy all /api/* calls server-side to the backend.
+    # Public URL is printed to container logs on startup:
+    #   docker compose logs -f cloudflared
+    command: tunnel --no-autoupdate --url http://frontend:3000
+    networks:
+      - chainbreak_net
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 32M
+
+volumes:
+  chainbreak_db:
+  chainbreak_logs:
+  chainbreak_data:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  nginx_certs:

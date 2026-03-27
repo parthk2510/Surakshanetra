@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-dark-900 text-dark-100;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-900;
+  }
+  
+  .btn-secondary {
+    @apply bg-dark-700 hover:bg-dark-600 text-dark-100 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-dark-500 focus:ring-offset-2 focus:ring-offset-dark-900;
+  }
+  
+  .input-field {
+    @apply bg-dark-800 border border-dark-600 text-dark-100 placeholder-dark-400 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-dark-800 border border-dark-700 rounded-xl p-6 shadow-lg;
+  }
+  
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-dark-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dark-500;
+}
+
+/* Sigma.js container styles */
+#sigma-container {
+  @apply w-full h-full bg-dark-900;
+}
+
+/* Loading animation */
+.loading-dots {
+  @apply inline-flex space-x-1;
+}
+
+.loading-dots > div {
+  @apply w-2 h-2 bg-primary-500 rounded-full animate-pulse;
+  animation-delay: calc(var(--i) * 0.1s);
+}
+
+/* Graph node hover effects */
+.sigma-node:hover {
+  filter: brightness(1.2) !important;
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse animation for anomalous/flagged nodes */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+}
+
+@keyframes glow {
+  0% {
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.5));
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Graph node groups */
+.node-group {
+  transition: filter 0.2s ease;
+}
+
+.node-group:hover {
+  filter: brightness(1.3);
+}
+
+/* Traffic light risk indicators */
+.risk-critical {
+  @apply bg-red-500/20 border-red-500/50 text-red-400;
+}
+
+.risk-high {
+  @apply bg-orange-500/20 border-orange-500/50 text-orange-400;
+}
+
+.risk-medium {
+  @apply bg-yellow-500/20 border-yellow-500/50 text-yellow-400;
+}
+
+.risk-low {
+  @apply bg-green-500/20 border-green-500/50 text-green-400;
+}
+
+/* Section dividers */
+.section-divider {
+  @apply relative flex items-center py-2;
+}
+
+.section-divider::before,
+.section-divider::after {
+  @apply flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent;
+  content: '';
+}
+
+.section-divider span {
+  @apply px-3 text-xs uppercase tracking-wide text-gray-500 font-medium;
+}
+
+/* Interactive card styles */
+.interactive-card {
+  @apply bg-gray-800/50 border border-gray-700/50 rounded-lg transition-all duration-200;
+  @apply hover:bg-gray-800/70 hover:border-gray-600/50 hover:shadow-lg;
+}
+
+.interactive-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Tooltip styles */
+.custom-tooltip {
+  @apply absolute z-50 px-3 py-2 text-xs text-white bg-gray-900/95 rounded-lg shadow-xl border border-gray-700/50;
+  backdrop-filter: blur(8px);
+}
+
+.custom-tooltip::after {
+  content: '';
+  @apply absolute w-2 h-2 bg-gray-900/95 border-b border-r border-gray-700/50 transform rotate-45;
+  bottom: -5px;
+  left: 50%;
+  margin-left: -4px;
+}
