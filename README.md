@@ -6,67 +6,270 @@ ChainBreak is a full-stack forensic analysis tool for investigating suspicious b
 
 ## Architecture
 
-```
-ChainBreak/
-├── app.py                        # Entry point — starts FastAPI server or CLI analysis
-├── backend/
-│   ├── api_root.py               # Main FastAPI app, all route definitions
-│   ├── database/
-│   │   ├── models.py             # SQLAlchemy ORM: User, Role, UserSession, AuditLog
-│   │   ├── auth.py               # JWT auth, login, logout, token refresh endpoints
-│   │   └── rbac.py               # Role definitions and permission constants
-│   ├── api/v1/
-│   │   ├── user_management_routes.py  # Admin user CRUD, role assignment
-│   │   └── ...                   # Other v1 route modules
-│   ├── logger/
-│   │   └── app_logger.py         # Rotating file handler → backend/logs/chainbreak.log
-│   ├── services/                 # Blockchain fetcher, temporal analysis, threat intel
-│   └── core/
-│       └── Community_Detection/  # Louvain, Leiden, Label Propagation, Infomap
-└── frontend/
-    ├── src/
-    │   ├── App.js                # Root component, auth state, layout
-    │   ├── components/           # Feature UI components
-    │   ├── features/             # Investigation dashboard
-    │   ├── hooks/usePermissions.js  # Role/permission checks from localStorage
-    │   └── utils/
-    │       ├── api.js            # Axios instance with JWT + CSRF interceptors
-    │       └── upiCaseManager.js # UPI case save/load/list/delete helpers
-    └── build/                    # Production build served by FastAPI
-```
-
----
-
-## Architecture
-
-```
-ChainBreak/
-├── app.py                        # Entry point — starts FastAPI server or CLI analysis
-├── backend/
-│   ├── api_root.py               # Main FastAPI app, all route definitions
-│   ├── database/
-│   │   ├── models.py             # SQLAlchemy ORM: User, Role, UserSession, AuditLog
-│   │   ├── auth.py               # JWT auth, login, logout, token refresh endpoints
-│   │   └── rbac.py               # Role definitions and permission constants
-│   ├── api/v1/
-│   │   ├── user_management_routes.py  # Admin user CRUD, role assignment
-│   │   └── ...                   # Other v1 route modules
-│   ├── logger/
-│   │   └── app_logger.py         # Rotating file handler → backend/logs/chainbreak.log
-│   ├── services/                 # Blockchain fetcher, temporal analysis, threat intel
-│   └── core/
-│       └── Community_Detection/  # Louvain, Leiden, Label Propagation, Infomap
-└── frontend/
-    ├── src/
-    │   ├── App.js                # Root component, auth state, layout
-    │   ├── components/           # Feature UI components
-    │   ├── features/             # Investigation dashboard
-    │   ├── hooks/usePermissions.js  # Role/permission checks from localStorage
-    │   └── utils/
-    │       ├── api.js            # Axios instance with JWT + CSRF interceptors
-    │       └── upiCaseManager.js # UPI case save/load/list/delete helpers
-    └── build/                    # Production build served by FastAPI
-```
+├── .gitattributes
+├── LICENSE
+├── app.py
+├── backend
+│   ├── Dockerfile.railway
+│   ├── __init__.py
+│   ├── analysis
+│   │   ├── __init__.py
+│   │   └── threat_intelligence.py
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── chainbreak_manager.py
+│   │   ├── v1
+│   │   │   ├── algorithm.py
+│   │   │   ├── analysis_routes.py
+│   │   │   ├── background_jobs.py
+│   │   │   ├── blockchain_routes.py
+│   │   │   ├── case_routes.py
+│   │   │   ├── cors.py
+│   │   │   ├── graph_routes.py
+│   │   │   ├── static.py
+│   │   │   ├── system_routes.py
+│   │   │   ├── temporal.py
+│   │   │   ├── threat_intel.py
+│   │   │   ├── upi_routes.py
+│   │   │   └── user_management_routes.py
+│   │   └── v2
+│   │       ├── __init__.py
+│   │       └── endpoints.py
+│   ├── api.py
+│   ├── api_frontend.py
+│   ├── api_gateway.py
+│   ├── api_root.py
+│   ├── chainbreak.py
+│   ├── core
+│   │   ├── Community_Detection
+│   │   │   ├── __init__.py
+│   │   │   ├── infomap_algorithm_btc.py
+│   │   │   ├── label_propagation_btc.py
+│   │   │   ├── leiden_algorithm_btc.py
+│   │   │   └── louvain_simple_btc.py
+│   │   ├── __init__.py
+│   │   ├── data_ingestion_Neo4j.py
+│   │   └── data_ingestion_json.py
+│   ├── database
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── models.py
+│   │   └── rbac.py
+│   ├── dockerfile
+│   ├── extensions.py
+│   ├── logger
+│   │   ├── __init__.py
+│   │   ├── app_logger.py
+│   │   ├── logger.py
+│   │   └── structured_logger.py
+│   ├── railway.toml
+│   ├── services
+│   │   ├── RGCN
+│   │   │   ├── __init__.py
+│   │   │   ├── api
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── dependencies.py
+│   │   │   │   ├── router.py
+│   │   │   │   └── schemas.py
+│   │   │   ├── model
+│   │   │   │   ├── fraud_pipeline.pkl
+│   │   │   │   ├── if_feature_columns.pkl
+│   │   │   │   ├── if_scaler.pkl
+│   │   │   │   ├── isolation_forest.pkl
+│   │   │   │   ├── rgcn_config.pkl
+│   │   │   │   ├── rgcn_node_scaler.pkl
+│   │   │   │   └── rgcn_weights.pt
+│   │   │   ├── pipelines
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── run_pipeline.py
+│   │   │   │   ├── step1_preprocess.py
+│   │   │   │   ├── step2_isolation_forest.py
+│   │   │   │   ├── step3_graph_construction.py
+│   │   │   │   ├── step4_rgcn_training.py
+│   │   │   │   ├── step5_score_merging.py
+│   │   │   │   ├── step6_pkl_serialization.py
+│   │   │   │   ├── step7_fastapi.py
+│   │   │   │   └── test_api.py
+│   │   │   └── utils
+│   │   │       ├── __init__.py
+│   │   │       ├── config.py
+│   │   │       └── logger.py
+│   │   ├── __init__.py
+│   │   ├── analytics
+│   │   │   ├── __init__.py
+│   │   │   ├── anomaly_detection.py
+│   │   │   └── risk_scoring.py
+│   │   ├── blockchain
+│   │   │   ├── __init__.py
+│   │   │   ├── address.py
+│   │   │   ├── base.py
+│   │   │   ├── block.py
+│   │   │   ├── blockchain_fetcher.py
+│   │   │   ├── client.py
+│   │   │   ├── config.py
+│   │   │   ├── constant.py
+│   │   │   ├── coordinator.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── fetch_blockchain_com.py
+│   │   │   ├── models.py
+│   │   │   ├── session.py
+│   │   │   ├── tor_layer.py
+│   │   │   ├── transaction.py
+│   │   │   └── utils.py
+│   │   ├── decision_engine.py
+│   │   ├── temporal
+│   │   │   ├── __init__.py
+│   │   │   ├── community_detector.py
+│   │   │   ├── data_loader.py
+│   │   │   ├── graph_builder.py
+│   │   │   ├── pipeline.py
+│   │   │   ├── reporter.py
+│   │   │   ├── run_temporal_analysis.py
+│   │   │   ├── temporal_comparator.py
+│   │   │   └── transition_detector.py
+│   │   ├── threat_intel
+│   │   │   ├── __init__.py
+│   │   │   └── threat_intelligence.py
+│   │   └── upi
+│   │       ├── __init__.py
+│   │       ├── upi_analysis.py
+│   │       ├── upi_community_cache.py
+│   │       ├── upi_community_comparison.py
+│   │       ├── upi_community_detection.py
+│   │       └── upi_neo4j_community.py
+│   ├── utils
+│   │   ├── __init__.py
+│   │   ├── json_encoder.py
+│   │   └── query.py
+│   └── visualization.py
+├── config.yaml
+├── crypto_threat_intel_package
+│   ├── config
+│   │   ├── scraper_config.py
+│   │   └── threat_intel_config.py
+│   └── scrapers
+│       ├── bitcoinwhoswho_scraper.py
+│       ├── chainabuse_scraper.py
+│       └── threat_intel_client.py
+├── dir.py
+├── docker-compose.yaml
+├── frontend
+│   ├── App.css
+│   ├── App.ts
+│   ├── App.tsx
+│   ├── app
+│   │   ├── client-page.tsx
+│   │   ├── dashboard
+│   │   │   └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── ActionableInsightsPanel.tsx
+│   │   ├── AdaptiveGraphRenderer.tsx
+│   │   ├── AddressInput.tsx
+│   │   ├── AlgorithmComparisonTable.tsx
+│   │   ├── AnomalyTimeline.tsx
+│   │   ├── BreadcrumbNav.tsx
+│   │   ├── CaseExportButton.tsx
+│   │   ├── CaseFileViewer.tsx
+│   │   ├── DataCoverageBar.tsx
+│   │   ├── DecisionPanel.tsx
+│   │   ├── EnhancedLeadCard.tsx
+│   │   ├── EnhancedNodeDetails.tsx
+│   │   ├── EnhancedUPIGraphRenderer.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── ForensicInspector.tsx
+│   │   ├── GraphLegend.tsx
+│   │   ├── GraphLegendEnhanced.tsx
+│   │   ├── GraphRenderer.tsx
+│   │   ├── Header.tsx
+│   │   ├── InvestigationModal.tsx
+│   │   ├── LeadsPanel.tsx
+│   │   ├── LogViewer.tsx
+│   │   ├── LoginPage.tsx
+│   │   ├── NodeDetails.tsx
+│   │   ├── ProfileSettings.tsx
+│   │   ├── RecentAnalysisManager.tsx
+│   │   ├── SettingsPanel.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── TemporalEvolutionPanel.tsx
+│   │   ├── UPIAddressInput.tsx
+│   │   ├── UPIAnalysisList.tsx
+│   │   ├── UPICommunityComparison.tsx
+│   │   ├── UPICommunityDetection.tsx
+│   │   ├── UPIGraphRenderer.tsx
+│   │   ├── UPIRecentAnalysisManager.tsx
+│   │   ├── UPISettings.tsx
+│   │   ├── UPIStorageManager.tsx
+│   │   ├── WebGLGraphRenderer.tsx
+│   │   ├── analysis.tsx
+│   │   ├── cache.tsx
+│   │   ├── config.tsx
+│   │   └── runLouvainAlgorithm_replacement.tsx
+│   ├── context
+│   │   ├── ConfigContext.ts
+│   │   ├── ConfigContext.tsx
+│   │   └── ThemeContext.tsx
+│   ├── core
+│   │   ├── ForensicDataManager.ts
+│   │   ├── InvestigationHelpers.ts
+│   │   ├── LeadGenerator.ts
+│   │   └── LeidenDetector.ts
+│   ├── dockerfile
+│   ├── eslint.config.mjs
+│   ├── features
+│   │   ├── auth
+│   │   │   ├── components
+│   │   │   │   └── LoginPage.tsx
+│   │   │   ├── hooks
+│   │   │   │   └── useAuth.tsx
+│   │   │   └── services
+│   │   │       └── authApi.tsx
+│   │   └── investigation
+│   │       └── components
+│   │           └── InvestigationDashboard.tsx
+│   ├── hooks
+│   │   ├── useForensicGraph.ts
+│   │   ├── useMempoolMonitor.ts
+│   │   ├── useMempoolMonitor.tsx
+│   │   └── usePermissions.ts
+│   ├── index.css
+│   ├── index.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── styles
+│   │   ├── forensic.css
+│   │   └── z-layers.ts
+│   ├── tsconfig.json
+│   ├── types
+│   │   └── axios.d.ts
+│   ├── utils
+│   │   ├── api.ts
+│   │   ├── blockchainAPI.ts
+│   │   ├── caseFileManager.ts
+│   │   ├── formatters.ts
+│   │   ├── logger.ts
+│   │   ├── normalizeGraphData.ts
+│   │   ├── structuredLogger.ts
+│   │   └── upiCaseManager.ts
+│   └── vercel.json
+├── nginx
+│   ├── default.conf
+│   ├── dockerfile
+│   ├── generate-ssl.sh
+│   ├── nginx.conf
+│   └── ssl.conf
+└── railway.toml
 
 
 **Runtime:** Single port `5000`. FastAPI serves the React production build from `frontend/build/` at the SPA catch-all route. The dev proxy (`package.json` → port 5000) is used only during `npm start`.
