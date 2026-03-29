@@ -5,7 +5,7 @@ ChainBreak is a full-stack forensic analysis tool for investigating suspicious b
 ---
 
 ## Architecture
-
+```
 ├── .gitattributes
 ├── LICENSE
 ├── app.py
@@ -270,7 +270,7 @@ ChainBreak is a full-stack forensic analysis tool for investigating suspicious b
 │   ├── nginx.conf
 │   └── ssl.conf
 └── railway.toml
-
+```
 
 **Runtime:** Single port `5000`. FastAPI serves the React production build from `frontend/build/` at the SPA catch-all route. The dev proxy (`package.json` → port 5000) is used only during `npm start`.
 
