@@ -2,6 +2,24 @@
 
 ChainBreak is a full-stack forensic analysis tool for investigating suspicious blockchain (Bitcoin) transactions and UPI payment mule networks. It combines graph-based transaction tracing, community detection algorithms, and a role-based access control system into a single web application.
 
+**Development Link:** https://chainbreak.duckdns.org/
+
+**Product Prototype Link:** https://call-correspondence-grants-monitoring.trycloudflare.com/
+
+**For Product Prototype Link Use Credentials:**
+
+Username: admin
+Password: ChainBreak_Admin_2026!
+
+**Input Data:**
+
+The input data is in the folder: input_data
+
+**CSV Flies:**
+
+CSV flies are present in the input folder Folder .
+
+
 ---
 
 ## Architecture
